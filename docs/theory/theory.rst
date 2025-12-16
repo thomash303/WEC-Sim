@@ -206,7 +206,9 @@ The mean drift force is combined with the excitation force in the response class
 .. ACTION: Add QTF documentation here
 
 .. Note::
-    Currently, WEC-Sim only supports mean drift coefficients and QTF from WAMIT.
+    Currently, WEC-Sim supports mean drift coefficients and QTF from WAMIT and NEMOH.
+
+.. _cic_theory:
 
 Convolution Integral Formulation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -277,7 +279,7 @@ equations. In general, a linear system is desired such that:
     \dot{X}_{r} \left( t \right) =
         \mathbf{A_{r}} X_{r} \left( t \right) +
         \mathbf{B_{r}} \mathbf{u} (t);~~X_{r}\left( 0 \right) = 0~~ \nonumber \\
-    \int_{0}^{t} \mathbf{K_{r}} \left( t- \tau \right) d\tau \approx
+    \int_{0}^{t} \mathbf{K_{r}} \left( t- \tau \right) \dot{X} \left( \tau \right) d\tau \approx
         \mathbf{C_{r}} X_{r} \left( t \right) +
         \mathbf{D_{r}} \mathbf{u} \left( t \right)~~
 
@@ -543,7 +545,7 @@ A more general description of a wave field can be expressed
     
 where :math:`D(\omega,\theta)` indicates that the directional components of a wave can also
 vary with frequency. The total energy in the directional spectrum must be the same at each frequency
-as the total energy in the one-dimensional spectrum. At each frequency,:math:`D(\theta)` is often parameterized by an
+as the total energy in the one-dimensional spectrum. At each frequency, :math:`D(\theta)` is often parameterized by an
 analytical distribution about a mean value, called a spreading function. The default spreading function
 used by WEC-Sim is a Gaussian defined by a mean :math:`\theta` and a standard deviation `\psi`.
 
