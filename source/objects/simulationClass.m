@@ -1,5 +1,5 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Copyright 2014 National Renewable Energy Laboratory and National 
+% Copyright 2014 National Laboratory of the Rockies and National 
 % Technology & Engineering Solutions of Sandia, LLC (NTESS). 
 % Under the terms of Contract DE-NA0003525 with NTESS, 
 % the U.S. Government retains certain rights in this software.
@@ -86,7 +86,7 @@ classdef simulationClass<handle
         date                = datetime                                     % (`string`) Simulation date and time
         gitCommit           = []                                           % (`string`) GitHub commit
         maxIt               = []                                           % (`integer`) Total number of simulation time steps. Approximate for variable step solvers. Default = dependent
-        wsVersion           = '7.0.0'                                      % (`string`) WEC-Sim version
+        wsVersion           = '7.1.0'                                      % (`string`) WEC-Sim version
     end
 
     methods

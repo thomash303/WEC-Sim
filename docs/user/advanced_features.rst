@@ -309,7 +309,11 @@ direction. For more information about the spectral formulation, refer to
 
     Users must define appropriate spreading parameters to ensure energy is 
     conserved. Recommended directional spreading functions include 
-    Cosine-Squared and Cosine-2s.
+    Cosine-Squared and Cosine-2s. 
+
+    For full-directional waves, the spreading is defined differently (does not sum to 1) and
+    the parameter `waves.fullDirectionalSpectrum.spread` is used in place of `waves.spread`.
+    Refer to :ref:`user-code-structure-full-dir` for more information.
 
 .. _user-advanced-features-seeded-phase:
 
@@ -765,38 +769,37 @@ Drag Bodies
 ^^^^^^^^^^^
 
 For some simulations, it might be important to model bodies that do not have 
-hydrodynamic forces acting on them. This could be bodies that are completely 
-outside of the water but are still connected through a joint to the WEC bodies, 
-or it could be bodies deeply submerged to the point where the hydrodynamics may 
-be neglected. WEC-Sim allows for bodies which have no hydrodynamic forces 
-acting on them and for which no BEM data is provided. 
+hydrodynamic forces acting on them. 
+These could be bodies that are above the water line but connected to wetted bodies through various joints, 
+bodies submerged deeply enough that the hydrodynamics may be neglected, 
+or slender bodies better suited to other modeling approaches (e.g. strip theory / Morison elements).
+To model such cases, WEC-Sim allows for drag bodies which do not require BEM data.
 
-To do this, use the Drag Body block from the WECSim_Lib_Body_Drag Library and initialize it in the 
-WEC-Sim input file as any other body but leave the name of the ``h5`` file as 
-an empty string. Specify :code:`body(i).nonHydro;`, body name, 
-mass, moments of inertia, center of gravity, center of buoyancy, geometry file, 
-location, and displaced volume. You can also specify visualization options and 
-initial displacement. 
+To do this, use the Rigid Body block from the WECSim_Lib_Body_Elements Library. Initialize it in the 
+WEC-Sim input file with an empty string for the name of the ``h5`` file and define the ``body(i).nonHydro`` flag::
 
-To use drag bodies, the following body class variable must be 
-defined in the WEC-Sim input file, for example:: 
+    body(i) = bodyClass('');
+    body(i).nonHydro = 1; % recommended value. See note below. 
 
-    body(i).nonHydro = 1; % or
-    body(i).nonHydro = 2;
+Define other required body properties::
 
-Drag bodies require the following properties to be defined::
-
+    body(i).geometryFile
     body(i).mass
     body(i).inertia
+    
+Drag bodies require the following properties to be defined since there is not BEM to utilize::
+
+    body(i).name
     body(i).centerGravity
     body(i).volume
+    body(i).centerBuoyancy % value ignored for non-wetted bodies with zero displaced volume
 
-Drag bodies with no additional forces acting on them become non-hydrodynamic, no fluid forces act on them, 
-but they still couple other bodies together, and influence the multibody simulation.
+Drag bodies initialized with only the required parameters have no additional fluid forces acting on them and are non-hydrodynamic. 
+These bodies still couple other bodies together, and influence the multibody simulation through their mass and buoyancy.
 If a drag body is not subject to wave excitation, but damping, added mass, or viscous drag are still a concern,
 viscous drag, linear damping, or Morison element forces may be defined. An example of this body type is a 
 deeply-submerged heave plate of large surface area tethered to a float. In 
-these instances, the additional forces can be specified by the parameters:
+these instances, the additional forces can be specified by the parameters::
 
     body(i).quadDrag.drag
     body(i).quadDrag.cd
@@ -811,8 +814,7 @@ or if using Morison Elements::
     body(i).morisonElement.VME
     body(i).morisonElement.rgME
     
-One can additionally describe initial body 
-displacement in the manner of a hydrodynamic body. 
+Specify visualization options and initial displacement for a drag body as normal.
 
 In the case where only drag bodies are used, WEC-Sim does
 not read an ``*.h5`` file. Users must define these additional parameters to 
@@ -825,6 +827,11 @@ the simulation to define them::
 For more information, refer to :ref:`webinar2`, and the **Nonhydro_Body** 
 example on the `WEC-Sim Applications 
 <https://github.com/WEC-Sim/WEC-Sim_Applications>`_ repository. 
+
+.. Note::
+    The flag ``body.nonHydro`` previously (≤v6.1.2) allowed for three values: 0 (hydrodynamic), 1 (non-hydro), 2 (drag).
+    Non-hydro and drag library blocks have since been combined since the default drag body is exactly the non-hydro body.
+    The flag ``body.nonHydro=2`` is still allowed for backwards compatibility but acts identically to ``body.nonHydro=1``.
 
 
 .. _user-advanced-features-b2b:
@@ -1055,13 +1062,13 @@ optimal causal controls. The WEC impedance can be modeled by the following equat
 
 By characterizing the impedance of the WEC, a greater understanding of the 
 dynamics can be reached. The figure below is a bode plot of the impedance of 
-the RM3 float body. The natural frequency is defined by the point at which the 
+the RM3 float body. The resonant frequency is defined by the point at which the 
 phase of impedance is zero. By also plotting the frequency of the incoming 
-wave, it is simple to see the difference between the natural frequency of 
+wave, it is simple to see the difference between the resonant frequency of 
 the device and the wave frequency. Complex conjugate control (and some other
-control methods) seeks to adjust the natural frequency of the device to match 
-the wave frequency. Matching the natural frequency to the wave frequency leads 
-to resonance, which allows for theoretically optimal mechanical power. 
+control methods) seeks to adjust the resonant frequency of the system to match 
+the wave frequency. Matching the reonance frequency to the wave frequency leads 
+to system resonance, which allows for theoretically optimal mechanical power. 
 
 .. figure:: /_static/images/impedance.png
    :width: 300pt 
@@ -1171,7 +1178,7 @@ Latching control combines a traditional passive controller with a latching mecha
 a large braking force during a portion of the oscillation. By locking the device for 
 part of the oscillation, latching control attempts to adjust the phase of the motion to 
 match the phase of incoming waves. Latching control can slow the device motion to match 
-wave motion and is therefore most often used when the wave period is longer than the natural 
+wave motion and is therefore most often used when the wave period is longer than the resonant 
 period. Latching control is still considered passive as no energy input is required (assuming velocity 
 is zero while latched).
 
@@ -1185,9 +1192,9 @@ adjusted based on the device's properties :cite:`babarit2006optimal`:
 Because latching achieves phase matching between the waves and device, the optimal 
 damping can be assumed the same as for reactive control. Lastly, the main control 
 variable, latching time, needs to be determined. For regular waves, it is 
-desired for the device to move for a time equal to its natural frequency, meaning 
+desired for the device to move for a time equal to its resonant frequency, meaning 
 the optimal latching time is likely close to half the difference between the wave 
-period and the natural period :cite:`babarit2006optimal` (accounting for 2 latching periods per wave period).
+period and the resonant period :cite:`babarit2006optimal` (accounting for 2 latching periods per wave period).
 
 .. math::
 
@@ -1223,7 +1230,7 @@ Declutching Control
 
 Declutching control is essentially the opposite of latching. Instead of locking the device, 
 it is allowed to move freely (no PTO force) for a portion of the oscillation. Often, 
-declutching is used when the wave period is smaller than the natural period, allowing the 
+declutching is used when the wave period is smaller than the resonant period, allowing the 
 device motion to "catch up" to the wave motion. Declutching is also considered 
 a passive control method.
 
@@ -1231,7 +1238,7 @@ The optimal declutching time and damping values are slightly harder to estimate 
 latching. The device's motion still depends on its impedance during the declutching period, 
 meaning the device does not really move "freely" during this time. Hence, in opposition to 
 optimal latching the declutching time was assumed to be near half the difference between 
-the natural period and the wave period, but is further examined through tests.
+the resonant period and the wave period, but is further examined through tests.
 
 .. math::
 
@@ -1243,7 +1250,7 @@ period, it is likely that a larger damping is required. Thus, the optimal passiv
 damping value was used for the following simulations, although a more 
 optimal damping value likely exists for delclutching.
 
-Since declutching is most desired when the wave period is smaller than the natural period, 
+Since declutching is most desired when the wave period is smaller than the resonant period, 
 a wave period of 3.5 seconds was tested with a height of 1 m. For comparison to traditional 
 passive control, the optimal passive damping value was tested for these conditions, leading
 to a power of 5.75 kW. The mcrBuildTimes.m file sets up a sweep of the declutching times, 
